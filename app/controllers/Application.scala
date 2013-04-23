@@ -4,8 +4,10 @@ import play.api._
 import play.api.data.Form
 import play.api.data.Forms._
 import play.api.mvc._
-
 import models.Task
+import play.api.libs.concurrent.Execution.Implicits._
+import java.util.concurrent.TimeUnit
+import scala.concurrent.Future
 
 object Application extends Controller {
   
@@ -39,5 +41,29 @@ object Application extends Controller {
   }
   
   
+  def asyncTask = Action {
+    Logger.info("In async action asyncTask ");
+    val futureInt = scala.concurrent.Future { intensiveComputation()}
+    val timeoutFuture = play.api.libs.concurrent.Promise.timeout("Oops", 9L, TimeUnit.SECONDS)
+    Async {
+      Future.firstCompletedOf(Seq(futureInt, timeoutFuture)).map { 
+      	case i: Int => {
+      		//Logger.info("Matched int %s", i)
+      		Ok("Got result: " + i)
+      	}
+      	case t: String => {
+      	  Logger.info("Matched t : {$t} ") 
+      	  InternalServerError(t)
+      	}
+      }  
+    }    
+  }
+  
+  def intensiveComputation() = {
+	  for( i <- 1 until 10){
+	    Thread.sleep(1000);
+	  }
+	  10
+  }
   
 }
