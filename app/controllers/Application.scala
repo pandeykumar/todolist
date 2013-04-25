@@ -8,9 +8,22 @@ import models.Task
 import play.api.libs.concurrent.Execution.Implicits._
 import java.util.concurrent.TimeUnit
 import scala.concurrent.Future
+import play.api.libs.json._
+import play.api.libs.functional.syntax._
+
+import pojo.Login
+
 
 object Application extends Controller {
-  
+
+  implicit val loginReads = (
+    (__ \ "userid").read[String] ~
+    (__ \ "password").read[String] ~
+    (__ \ "longitude").read[Double] ~
+    (__ \ "latitude").read[Double] ~
+    (__ \ "deviceid").read[String]
+  )(Login)  
+
   val taskForm = Form(
     "label" -> nonEmptyText
   )
@@ -57,6 +70,28 @@ object Application extends Controller {
       	}
       }  
     }    
+  }
+    
+  def login = Action(parse.json) { request =>
+        val json = request.body
+        val userid: JsValue = json \ "userid"
+        
+        
+        json.validate[Login].fold(
+        	valid = ( res => {
+        	  Logger.debug(res.toString)
+        	  Ok(res.userid);
+        	  
+        	}
+        	  ),
+        	invalid = ( e => {
+        	   Logger.warn(e.toString)
+        	   // Unauthorized("Sorry not authorized")
+        	   BadRequest(e.toString)
+        	  } )        	
+        )
+        
+        //Ok("request sent with userid  is :" + userid + " and payload was: " + Json.prettyPrint(json))    
   }
   
   def intensiveComputation() = {

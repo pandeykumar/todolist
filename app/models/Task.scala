@@ -34,5 +34,6 @@ object Task {
 	      'id -> id    
 	    ).executeUpdate()	    
 	  }
-	}	
+	}
+
 }
